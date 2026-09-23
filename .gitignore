@@ -1,0 +1,45 @@
+# Dependencies
+frontend/node_modules
+backend/.venv
+
+# Environment
+.env
+.env.local
+*.env
+
+# Build outputs
+frontend/.next
+frontend/out
+frontend/dist
+backend/__pycache__
+backend/*.pyc
+backend/faiss_indexes
+
+# Database
+backend/*.db
+backend/*.sqlite3
+
+# Storage
+storage/images/lost/*
+storage/images/found/*
+!storage/images/lost/.gitkeep
+!storage/images/found/.gitkeep
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+frontend/coverage
+backend/.coverage
+backend/htmlcov
+backend/.pytest_cache
