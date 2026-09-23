@@ -51,28 +51,6 @@ class Claim(Base):
     claimant = relationship("User")
 
 
-class NotificationType(str, enum.Enum):
-    MATCH_FOUND = "match_found"
-    CLAIM_SUBMITTED = "claim_submitted"
-    CLAIM_APPROVED = "claim_approved"
-    CLAIM_REJECTED = "claim_rejected"
-    ITEM_RETURNED = "item_returned"
-
-
-class Notification(Base):
-    __tablename__ = "notifications"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    type = Column(SQLEnum(NotificationType), nullable=False)
-    message = Column(Text, nullable=False)
-    is_read = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-
-    user = relationship("User")
-
-
 Index("idx_matches_lost_item", Match.lost_item_id)
 Index("idx_matches_found_item", Match.found_item_id)
 Index("idx_claims_match", Claim.match_id)
-Index("idx_notifications_user", Notification.user_id)

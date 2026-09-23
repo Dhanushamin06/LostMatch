@@ -95,8 +95,8 @@ class FAISSManager:
         k = min(k, self.index.ntotal)
         scores, faiss_ids = self.index.search(query_vectors, k)
         
-        # Convert faiss_ids to db_ids
-        db_ids = np.vectorize(lambda x: self.id_mapping.get(x, -1))(faiss_ids)
+        # Convert faiss_ids to db_ids (ensure Python int types)
+        db_ids = np.vectorize(lambda x: int(self.id_mapping.get(x, -1)))(faiss_ids)
         
         return scores, db_ids
 

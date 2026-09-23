@@ -45,6 +45,8 @@ class LostItem(Base):
     lost_time = Column(Time, nullable=True)
     status = Column(SQLEnum(ItemStatus), default=ItemStatus.LOST, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    text_embedding_id = Column(Integer, nullable=True)
+    image_embedding_id = Column(Integer, nullable=True)
 
     user = relationship("User")
     matches = relationship("Match", back_populates="lost_item", foreign_keys="Match.lost_item_id")
@@ -67,6 +69,8 @@ class FoundItem(Base):
     found_time = Column(Time, nullable=True)
     status = Column(SQLEnum(ItemStatus), default=ItemStatus.FOUND, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    text_embedding_id = Column(Integer, nullable=True)
+    image_embedding_id = Column(Integer, nullable=True)
 
     user = relationship("User")
     matches = relationship("Match", back_populates="found_item", foreign_keys="Match.found_item_id")

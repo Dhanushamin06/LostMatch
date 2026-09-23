@@ -24,6 +24,31 @@ class MatchingService:
         self.weights = get_weights()
         self.top_k = 5
 
+    def _filter_search_results(self, scores, ids, valid_ids):
+        """Filter FAISS search results to only include valid IDs"""
+        if scores is None or ids is None or ids.size == 0:
+            return np.array([]).reshape(1, 0), np.array([]).reshape(1, 0)
+        
+        filtered_scores = []
+        filtered_ids = []
+        
+        for i in range(ids.shape[0]):
+            row_scores = []
+            row_ids = []
+            for j in range(ids.shape[1]):
+                db_id = int(ids[i, j])
+                if db_id in valid_ids:
+                    row_scores.append(float(scores[i, j]))
+                    row_ids.append(db_id)
+            if row_ids:
+                filtered_scores.append(row_scores)
+                filtered_ids.append(row_ids)
+        
+        if not filtered_ids:
+            return np.array([]).reshape(1, 0), np.array([]).reshape(1, 0)
+        
+        return np.array(filtered_scores), np.array(filtered_ids)
+
     def _get_text_for_embedding(self, item: LostItem | FoundItem) -> str:
         """Combine text fields for embedding"""
         parts = []
@@ -134,24 +159,36 @@ class MatchingService:
         # Get candidate found items from DB
         candidate_ids = set()
         if text_ids.size > 0:
-            candidate_ids.update(text_ids[0])
+            candidate_ids.update(int(x) for x in text_ids[0])
         if image_ids is not None and image_ids.size > 0:
-            candidate_ids.update(image_ids[0])
+            candidate_ids.update(int(x) for x in image_ids[0])
         
         candidate_ids = [cid for cid in candidate_ids if cid > 0]
         if not candidate_ids:
             return []
         
+        # Only query for items that exist in DB
         found_items = self.db.query(FoundItem).filter(
             FoundItem.id.in_(candidate_ids),
             FoundItem.status.in_([ItemStatus.FOUND, ItemStatus.POTENTIAL_MATCH])
         ).all()
         
+        # Filter candidate_ids to only those that exist in DB
+        existing_ids = {item.id for item in found_items}
+        candidate_ids = [cid for cid in candidate_ids if cid in existing_ids]
+        if not candidate_ids:
+            return []
+        
         candidate_dict = {item.id: self._item_to_dict(item, "found") for item in found_items}
         
+        # Filter search results to only include existing IDs
+        existing_ids_set = set(existing_ids)
+        filtered_text_scores, filtered_text_ids = self._filter_search_results(text_scores, text_ids, existing_ids_set)
+        filtered_image_scores, filtered_image_ids = self._filter_search_results(image_scores, image_ids, existing_ids_set)
+        
         # Merge candidates
-        text_results = (text_scores, text_ids) if text_ids.size > 0 else (np.array([]), np.array([]))
-        image_results = (image_scores, image_ids) if image_ids is not None and image_ids.size > 0 else (np.array([]), np.array([]))
+        text_results = (filtered_text_scores, filtered_text_ids)
+        image_results = (filtered_image_scores, filtered_image_ids)
         
         merged = merge_candidates(text_results, image_results, self.top_k)
         
@@ -179,24 +216,36 @@ class MatchingService:
         # Get candidate lost items from DB
         candidate_ids = set()
         if text_ids.size > 0:
-            candidate_ids.update(text_ids[0])
+            candidate_ids.update(int(x) for x in text_ids[0])
         if image_ids is not None and image_ids.size > 0:
-            candidate_ids.update(image_ids[0])
+            candidate_ids.update(int(x) for x in image_ids[0])
         
         candidate_ids = [cid for cid in candidate_ids if cid > 0]
         if not candidate_ids:
             return []
         
+        # Only query for items that exist in DB
         lost_items = self.db.query(LostItem).filter(
             LostItem.id.in_(candidate_ids),
             LostItem.status.in_([ItemStatus.LOST, ItemStatus.POTENTIAL_MATCH])
         ).all()
         
+        # Filter candidate_ids to only those that exist in DB
+        existing_ids = {item.id for item in lost_items}
+        candidate_ids = [cid for cid in candidate_ids if cid in existing_ids]
+        if not candidate_ids:
+            return []
+        
         candidate_dict = {item.id: self._item_to_dict(item, "lost") for item in lost_items}
         
+        # Filter search results to only include existing IDs
+        existing_ids_set = set(existing_ids)
+        filtered_text_scores, filtered_text_ids = self._filter_search_results(text_scores, text_ids, existing_ids_set)
+        filtered_image_scores, filtered_image_ids = self._filter_search_results(image_scores, image_ids, existing_ids_set)
+        
         # Merge candidates
-        text_results = (text_scores, text_ids) if text_ids.size > 0 else (np.array([]), np.array([]))
-        image_results = (image_scores, image_ids) if image_ids is not None and image_ids.size > 0 else (np.array([]), np.array([]))
+        text_results = (filtered_text_scores, filtered_text_ids)
+        image_results = (filtered_image_scores, filtered_image_ids)
         
         merged = merge_candidates(text_results, image_results, self.top_k)
         
@@ -227,22 +276,22 @@ class MatchingService:
             if existing:
                 # Update score if better
                 if match.score.final_score > existing.final_score:
-                    existing.image_score = match.score.image_score
-                    existing.text_score = match.score.text_score
-                    existing.location_score = match.score.location_score
-                    existing.time_score = match.score.time_score
-                    existing.final_score = match.score.final_score
+                    existing.image_score = float(match.score.image_score)
+                    existing.text_score = float(match.score.text_score)
+                    existing.location_score = float(match.score.location_score)
+                    existing.time_score = float(match.score.time_score)
+                    existing.final_score = float(match.score.final_score)
                     existing.status = MatchStatus.PENDING
                 created_matches.append(existing)
             else:
                 new_match = Match(
                     lost_item_id=lost_id,
                     found_item_id=found_id,
-                    image_score=match.score.image_score,
-                    text_score=match.score.text_score,
-                    location_score=match.score.location_score,
-                    time_score=match.score.time_score,
-                    final_score=match.score.final_score,
+                    image_score=float(match.score.image_score),
+                    text_score=float(match.score.text_score),
+                    location_score=float(match.score.location_score),
+                    time_score=float(match.score.time_score),
+                    final_score=float(match.score.final_score),
                     status=MatchStatus.PENDING
                 )
                 self.db.add(new_match)

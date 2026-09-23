@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.database.session import Base, engine
-from app.routes import auth, lost_items, found_items, matches, claims, notifications, admin, health
+from app.routes import auth, lost_items, found_items, matches, claims, notifications, admin, health, profile
 
 
 @asynccontextmanager
@@ -41,6 +41,7 @@ app.include_router(found_items.router, prefix="/found-items", tags=["found-items
 app.include_router(matches.router, prefix="/matches", tags=["matches"])
 app.include_router(claims.router, prefix="/claims", tags=["claims"])
 app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+app.include_router(profile.router, prefix="/profile", tags=["profile"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
 
 
