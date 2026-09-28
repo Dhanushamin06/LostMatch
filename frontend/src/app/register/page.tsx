@@ -14,6 +14,7 @@ export default function RegisterPage() {
   const router = useRouter()
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -37,7 +38,7 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      await api.register(fullName, email, password)
+      await api.register(fullName, email, password, phoneNumber)
       router.push("/dashboard")
       router.refresh()
     } catch (err) {
@@ -88,6 +89,17 @@ export default function RegisterPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone_number">Mobile / Phone Number (Optional)</Label>
+              <Input
+                id="phone_number"
+                type="tel"
+                placeholder="+91 98765 43210"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                autoComplete="tel"
               />
             </div>
             <div className="space-y-2">

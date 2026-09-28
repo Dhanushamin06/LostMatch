@@ -9,9 +9,115 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { api } from "@/services/api"
 import { User as UserType } from "@/types"
 
+interface DashboardStats {
+  lost_items: number
+  found_items: number
+  lost_matched: number
+  found_matched: number
+  successful_returns: number
+  pending_claims: number
+  unread_notifications: number
+}
+
+interface ItemSummary {
+  id: number
+  title: string
+  category: string
+  image_url: string | null
+  location: string
+  lost_date?: string
+  found_date?: string
+  status: string
+  created_at: string
+  user_id: number
+}
+
+function ItemList({ items, type, emptyMessage, reportHref, icon: Icon }: {
+  items: ItemSummary[]
+  type: "lost" | "found"
+  emptyMessage: string
+  reportHref: string
+  icon: React.ComponentType<{ className?: string }>
+}) {
+  const dateField = type === "lost" ? "lost_date" : "found_date"
+  const iconColor = type === "lost" ? "text-blue-400" : "text-green-400"
+
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-white/60">{emptyMessage}</p>
+        <Link href={reportHref} className="mt-4 inline-block">
+          <Button variant="outline" className="w-full sm:w-auto">
+            <Icon className="h-4 w-4 mr-2" />
+            Report {type.charAt(0).toUpperCase() + type.slice(1)} Item
+          </Button>
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3 max-h-64 overflow-y-auto">
+      {items.slice(0, 3).map((item) => (
+        <Link key={item.id} href={`/items/${item.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors">
+          {item.image_url ? (
+            <img src={item.image_url} alt={item.title} className="h-12 w-12 object-cover rounded-lg" />
+          ) : (
+            <div className="h-12 w-12 rounded-lg bg-white/5 flex items-center justify-center">
+              <Icon className={`h-6 w-6 ${iconColor}`} />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-white truncate">{item.title}</p>
+            <p className="text-xs text-white/50">{item.location} • {item[dateField]}</p>
+          </div>
+          <span className="px-2 py-1 text-xs rounded-full bg-white/10 text-white/70">{item.status}</span>
+        </Link>
+      ))}
+      {items.length > 3 && (
+        <Link href="/items" className="text-center text-sm text-primary hover:underline block mt-2">
+          View all {items.length} {type} items
+        </Link>
+      )}
+    </div>
+  )
+}
+
+function NotificationList({ notifications }: { notifications: any[] }) {
+  if (notifications.length === 0) {
+    return <p className="text-white/60 text-center py-8">No notifications yet</p>
+  }
+
+  return (
+    <div className="space-y-2">
+      {notifications.slice(0, 5).map((notif) => (
+        <div key={notif.id} className="flex items-start gap-3 p-3 rounded-lg bg-white/5">
+          <Bell className="h-5 w-5 text-primary/80 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm text-white">{notif.message}</p>
+            <p className="text-xs text-white/40">{new Date(notif.created_at).toLocaleString()}</p>
+          </div>
+          {!notif.is_read && (
+            <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />
+          )}
+        </div>
+      ))}
+      {notifications.length > 5 && (
+        <Link href="/notifications" className="text-center text-sm text-primary hover:underline block mt-2">
+          View all notifications
+        </Link>
+      )}
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<UserType | null>(null)
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [lostItems, setLostItems] = useState<ItemSummary[]>([])
+  const [foundItems, setFoundItems] = useState<ItemSummary[]>([])
+  const [notifications, setNotifications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -22,10 +128,20 @@ export default function DashboardPage() {
       return
     }
 
-    const fetchUser = async () => {
+    const fetchData = async () => {
       try {
-        const userData = await api.get<UserType>("/auth/me")
+        const [userData, statsData, lostData, foundData, notifData] = await Promise.all([
+          api.get<UserType>("/auth/me"),
+          api.get<DashboardStats>("/profile/stats"),
+          api.get<ItemSummary[]>("/lost-items"),
+          api.get<ItemSummary[]>("/found-items"),
+          api.get<any[]>("/notifications?limit=5"),
+        ])
         setUser(userData)
+        setStats(statsData)
+        setLostItems(lostData)
+        setFoundItems(foundData)
+        setNotifications(notifData)
       } catch {
         api.logout()
         router.push("/login")
@@ -34,7 +150,7 @@ export default function DashboardPage() {
       }
     }
 
-    fetchUser()
+    fetchData()
   }, [router])
 
   const handleLogout = () => {
@@ -53,12 +169,12 @@ export default function DashboardPage() {
 
   if (!user) return null
 
-  const stats = [
-    { label: "Total Lost", value: "0", icon: Search, color: "text-blue-400" },
-    { label: "Total Found", value: "0", icon: Package, color: "text-green-400" },
-    { label: "Potential Matches", value: "0", icon: RotateCcw, color: "text-purple-400" },
-    { label: "Successful Returns", value: "0", icon: Box, color: "text-yellow-400" },
-  ]
+  const statCards = stats ? [
+    { label: "Total Lost", value: stats.lost_items, icon: Search, color: "text-blue-400" },
+    { label: "Total Found", value: stats.found_items, icon: Package, color: "text-green-400" },
+    { label: "Potential Matches", value: stats.lost_matched + stats.found_matched, icon: RotateCcw, color: "text-purple-400" },
+    { label: "Successful Returns", value: stats.successful_returns, icon: Box, color: "text-yellow-400" },
+  ] : []
 
   return (
     <div className="min-h-screen bg-background">
@@ -99,7 +215,9 @@ export default function DashboardPage() {
                     </Link>
                     <Link href="/notifications" className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5">
                       <Bell className="h-4 w-4" />
-                      Notifications
+                      Notifications {stats && stats.unread_notifications > 0 && (
+                        <span className="bg-red-500 text-xs rounded-full px-1.5 py-0.5">{stats.unread_notifications}</span>
+                      )}
                     </Link>
                     <hr className="border-white/10 my-2" />
                     <button onClick={handleLogout} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-white/5">
@@ -134,7 +252,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat) => (
+            {statCards.map((stat) => (
               <Card key={stat.label} className="glass border-white/10">
                 <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
                   <CardTitle className="text-sm font-medium text-white/60">{stat.label}</CardTitle>
@@ -150,35 +268,41 @@ export default function DashboardPage() {
           <div className="grid md:grid-cols-2 gap-6">
             <Card className="glass border-white/10">
               <CardHeader>
-                <CardTitle>My Lost Items</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-white/60 text-center py-8">No lost items reported yet</p>
-                <div className="text-center">
-                  <Link href="/report/lost">
-                    <Button variant="outline" className="w-full sm:w-auto">
-                      <Search className="h-4 w-4 mr-2" />
-                      Report Lost Item
-                    </Button>
+                <div className="flex items-center justify-between">
+                  <CardTitle>My Lost Items</CardTitle>
+                  <Link href="/items">
+                    <Button variant="ghost" size="sm">View All</Button>
                   </Link>
                 </div>
+              </CardHeader>
+              <CardContent>
+                <ItemList
+                  items={lostItems}
+                  type="lost"
+                  emptyMessage="No lost items reported yet"
+                  reportHref="/report/lost"
+                  icon={Search}
+                />
               </CardContent>
             </Card>
 
             <Card className="glass border-white/10">
               <CardHeader>
-                <CardTitle>My Found Items</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-white/60 text-center py-8">No found items reported yet</p>
-                <div className="text-center">
-                  <Link href="/report/found">
-                    <Button variant="outline" className="w-full sm:w-auto">
-                      <Package className="h-4 w-4 mr-2" />
-                      Report Found Item
-                    </Button>
+                <div className="flex items-center justify-between">
+                  <CardTitle>My Found Items</CardTitle>
+                  <Link href="/items">
+                    <Button variant="ghost" size="sm">View All</Button>
                   </Link>
                 </div>
+              </CardHeader>
+              <CardContent>
+                <ItemList
+                  items={foundItems}
+                  type="found"
+                  emptyMessage="No found items reported yet"
+                  reportHref="/report/found"
+                  icon={Package}
+                />
               </CardContent>
             </Card>
           </div>
@@ -186,10 +310,15 @@ export default function DashboardPage() {
           <div className="mt-6">
             <Card className="glass border-white/10">
               <CardHeader>
-                <CardTitle>Recent Notifications</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Recent Notifications</CardTitle>
+                  <Link href="/notifications">
+                    <Button variant="ghost" size="sm">View All</Button>
+                  </Link>
+                </div>
               </CardHeader>
               <CardContent>
-                <p className="text-white/60 text-center py-8">No notifications yet</p>
+                <NotificationList notifications={notifications} />
               </CardContent>
             </Card>
           </div>

@@ -4,30 +4,32 @@ export interface User {
   id: number
   full_name: string
   email: string
+  phone_number?: string | null
+  alt_contact?: string | null
   role: UserRole
   created_at: string
 }
 
 export type ItemCategory = 
-  | 'electronics' 
-  | 'bags' 
-  | 'wallets' 
-  | 'id_cards' 
-  | 'keys' 
-  | 'books' 
-  | 'clothing' 
-  | 'accessories' 
-  | 'documents' 
-  | 'other'
+  | 'ELECTRONICS' 
+  | 'BAGS' 
+  | 'WALLETS' 
+  | 'ID_CARDS' 
+  | 'KEYS' 
+  | 'BOOKS' 
+  | 'CLOTHING' 
+  | 'ACCESSORIES' 
+  | 'DOCUMENTS' 
+  | 'OTHER'
 
 export type ItemStatus = 
-  | 'lost' 
-  | 'found' 
-  | 'potential_match' 
-  | 'claim_pending' 
-  | 'verified' 
-  | 'returned' 
-  | 'closed'
+  | 'LOST' 
+  | 'FOUND' 
+  | 'POTENTIAL_MATCH' 
+  | 'CLAIM_PENDING' 
+  | 'VERIFIED' 
+  | 'RETURNED' 
+  | 'CLOSED'
 
 export interface BaseItem {
   id: number
@@ -41,6 +43,11 @@ export interface BaseItem {
   latitude: number | null
   longitude: number | null
   status: ItemStatus
+  contact_name?: string | null
+  contact_phone?: string | null
+  contact_email?: string | null
+  additional_details?: string | null
+  user?: User
   created_at: string
 }
 
@@ -54,7 +61,7 @@ export interface FoundItem extends BaseItem {
   found_time: string | null
 }
 
-export type MatchStatus = 'pending' | 'confirmed' | 'rejected'
+export type MatchStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'claim_pending'
 
 export interface Match {
   id: number
@@ -71,7 +78,7 @@ export interface Match {
   found_item?: FoundItem
 }
 
-export type ClaimStatus = 'pending' | 'verified' | 'rejected'
+export type ClaimStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
 
 export interface Claim {
   id: number

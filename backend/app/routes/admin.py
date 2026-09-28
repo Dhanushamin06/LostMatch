@@ -4,7 +4,7 @@ from app.database.session import get_db
 from app.core.dependencies import get_current_admin
 from app.models.user import User
 from app.models.item import LostItem, FoundItem
-from app.models.match import Match, Claim
+from app.models.match import Match, Claim, MatchStatus, ClaimStatus
 from app.routes import admin_users, admin_index
 
 router = APIRouter()
@@ -20,9 +20,9 @@ async def get_analytics(
     total_users = db.query(User).count()
     lost_items = db.query(LostItem).count()
     found_items = db.query(FoundItem).count()
-    potential_matches = db.query(Match).filter(Match.status == "pending").count()
-    successful_returns = db.query(Match).filter(Match.status == "confirmed").count()
-    pending_claims = db.query(Claim).filter(Claim.status == "pending").count()
+    potential_matches = db.query(Match).filter(Match.status == MatchStatus.PENDING).count()
+    successful_returns = db.query(Match).filter(Match.status == MatchStatus.CONFIRMED).count()
+    pending_claims = db.query(Claim).filter(Claim.status == ClaimStatus.PENDING).count()
     
     return {
         "total_users": total_users,

@@ -2,12 +2,15 @@ import os
 import uuid
 from datetime import date, time
 from typing import Optional
+from sqlalchemy import or_
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.user import User
-from app.models.item import FoundItem, ItemCategory, ItemStatus
+from app.models.item import FoundItem, LostItem, ItemCategory, ItemStatus
+from app.models.match import Match, Claim
+from app.models.notification import Notification
 from app.services.matching_service import get_matching_service
 import logging
 
@@ -47,6 +50,10 @@ async def create_found_item(
     location: str = Form(...),
     found_date: date = Form(...),
     found_time: Optional[time] = Form(None),
+    contact_name: Optional[str] = Form(None),
+    contact_phone: Optional[str] = Form(None),
+    contact_email: Optional[str] = Form(None),
+    additional_details: Optional[str] = Form(None),
     image: Optional[UploadFile] = File(None),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -76,6 +83,10 @@ async def create_found_item(
         
         image_url = f"/storage/images/found/{filename}"
 
+    resolved_contact_name = contact_name or current_user.full_name
+    resolved_contact_phone = contact_phone or current_user.phone_number
+    resolved_contact_email = contact_email or current_user.email
+
     found_item = FoundItem(
         user_id=current_user.id,
         title=title,
@@ -86,6 +97,10 @@ async def create_found_item(
         location=location,
         found_date=found_date,
         found_time=found_time,
+        contact_name=resolved_contact_name,
+        contact_phone=resolved_contact_phone,
+        contact_email=resolved_contact_email,
+        additional_details=additional_details,
         status=ItemStatus.FOUND
     )
     
@@ -110,6 +125,10 @@ async def create_found_item(
         "location": found_item.location,
         "found_date": found_item.found_date.isoformat(),
         "found_time": found_item.found_time.isoformat() if found_item.found_time else None,
+        "contact_name": found_item.contact_name,
+        "contact_phone": found_item.contact_phone,
+        "contact_email": found_item.contact_email,
+        "additional_details": found_item.additional_details,
         "status": found_item.status.value,
         "created_at": found_item.created_at.isoformat()
     }
@@ -147,6 +166,10 @@ async def list_found_items(
             "location": item.location,
             "found_date": item.found_date.isoformat(),
             "found_time": item.found_time.isoformat() if item.found_time else None,
+            "contact_name": item.contact_name,
+            "contact_phone": item.contact_phone,
+            "contact_email": item.contact_email,
+            "additional_details": item.additional_details,
             "status": item.status.value,
             "created_at": item.created_at.isoformat()
         }
@@ -160,12 +183,27 @@ async def get_found_item(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    item = db.query(FoundItem).filter(FoundItem.id == item_id, FoundItem.user_id == current_user.id).first()
+    item = db.query(FoundItem).filter(FoundItem.id == item_id).first()
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Found item not found"
         )
+    
+    # Allow access if user is the owner OR part of a match involving this item
+    if item.user_id != current_user.id:
+        # Check if user has a match with this item
+        match = db.query(Match).filter(
+            Match.found_item_id == item_id,
+            Match.lost_item_id.in_(
+                db.query(LostItem.id).filter(LostItem.user_id == current_user.id)
+            )
+        ).first()
+        if not match:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to view this item"
+            )
     
     return {
         "id": item.id,
@@ -177,8 +215,16 @@ async def get_found_item(
         "location": item.location,
         "found_date": item.found_date.isoformat(),
         "found_time": item.found_time.isoformat() if item.found_time else None,
+        "contact_name": item.contact_name or (item.user.full_name if item.user else None),
+        "contact_phone": item.contact_phone or (item.user.phone_number if item.user else None),
+        "contact_email": item.contact_email or (item.user.email if item.user else None),
+        "additional_details": item.additional_details,
         "status": item.status.value,
-        "created_at": item.created_at.isoformat()
+        "created_at": item.created_at.isoformat(),
+        "user_id": item.user_id,
+        "user_name": item.user.full_name if item.user else None,
+        "user_email": item.user.email if item.user else None,
+        "user_phone": item.user.phone_number if item.user else None,
     }
 
 
@@ -201,3 +247,42 @@ async def rematch_found_item(
         "message": f"Found {len(matches)} potential matches",
         "matches": len(created)
     }
+
+
+@router.delete("/{item_id}")
+async def delete_found_item(
+    item_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a found item and all related data"""
+    item = db.query(FoundItem).filter(FoundItem.id == item_id, FoundItem.user_id == current_user.id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    # Delete related matches
+    matches = db.query(Match).filter(Match.found_item_id == item_id).all()
+    for match in matches:
+        db.query(Claim).filter(Claim.match_id == match.id).delete()
+        db.query(Notification).filter(
+            or_(
+                Notification.message.contains(str(match.id)),
+                Notification.message.contains(item.title)
+            )
+        ).delete(synchronize_session=False)
+        db.delete(match)
+    
+    db.query(Notification).filter(
+        Notification.message.contains(item.title)
+    ).delete(synchronize_session=False)
+    
+    matching_service = get_matching_service(db)
+    try:
+        matching_service.remove_from_index(item.id, "found")
+    except:
+        pass
+    
+    db.delete(item)
+    db.commit()
+    
+    return {"message": "Item deleted successfully"}

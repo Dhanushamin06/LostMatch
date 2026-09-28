@@ -64,18 +64,37 @@ class MatchingService:
             parts.append(item.location)
         return " ".join(parts)
 
+    def _resolve_image_path(self, image_url: Optional[str]) -> Optional[str]:
+        if not image_url:
+            return None
+        import os
+        cleaned = image_url.lstrip("/\\")
+        cur_dir = os.path.dirname(os.path.abspath(__file__))
+        for _ in range(5):
+            candidate = os.path.join(cur_dir, cleaned)
+            if os.path.exists(candidate):
+                return candidate
+            cur_dir = os.path.dirname(cur_dir)
+        logger.warning(f"Image file not found for url: {image_url}")
+        return None
+
     def _process_lost_item(self, item: LostItem) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """Generate embeddings for a lost item"""
         text = self._get_text_for_embedding(item)
         text_emb = self.text_embedder.embed(text)
+        # text_embedder returns (1, D) for a single text - flatten to (D,)
+        if text_emb.ndim == 2:
+            text_emb = text_emb[0]
         
         image_emb = None
         if item.image_url:
             try:
-                import os
-                image_path = os.path.join("storage", item.image_url.lstrip("/"))
-                if os.path.exists(image_path):
+                image_path = self._resolve_image_path(item.image_url)
+                if image_path:
                     image_emb = self.image_embedder.embed(image_path)
+                    # image_embedder (CLIP) returns (1, D) for a single image - flatten to (D,)
+                    if image_emb.ndim == 2:
+                        image_emb = image_emb[0]
             except Exception as e:
                 logger.warning(f"Failed to embed image for lost item {item.id}: {e}")
         
@@ -85,14 +104,19 @@ class MatchingService:
         """Generate embeddings for a found item"""
         text = self._get_text_for_embedding(item)
         text_emb = self.text_embedder.embed(text)
+        # text_embedder returns (1, D) for a single text - flatten to (D,)
+        if text_emb.ndim == 2:
+            text_emb = text_emb[0]
         
         image_emb = None
         if item.image_url:
             try:
-                import os
-                image_path = os.path.join("storage", item.image_url.lstrip("/"))
-                if os.path.exists(image_path):
+                image_path = self._resolve_image_path(item.image_url)
+                if image_path:
                     image_emb = self.image_embedder.embed(image_path)
+                    # image_embedder (CLIP) returns (1, D) for a single image - flatten to (D,)
+                    if image_emb.ndim == 2:
+                        image_emb = image_emb[0]
             except Exception as e:
                 logger.warning(f"Failed to embed image for found item {item.id}: {e}")
         
@@ -262,10 +286,8 @@ class MatchingService:
         created_matches = []
         
         for match in matches:
-            if item.__class__ == LostItem:
-                lost_id, found_id = match.lost_item_id, match.found_item_id
-            else:
-                lost_id, found_id = match.found_item_id, match.lost_item_id
+            lost_id = match.lost_item_id
+            found_id = match.found_item_id
             
             # Check if match already exists
             existing = self.db.query(Match).filter(
@@ -274,14 +296,12 @@ class MatchingService:
             ).first()
             
             if existing:
-                # Update score if better
-                if match.score.final_score > existing.final_score:
-                    existing.image_score = float(match.score.image_score)
-                    existing.text_score = float(match.score.text_score)
-                    existing.location_score = float(match.score.location_score)
-                    existing.time_score = float(match.score.time_score)
-                    existing.final_score = float(match.score.final_score)
-                    existing.status = MatchStatus.PENDING
+                # Update score if better or refreshed
+                existing.image_score = float(match.score.image_score)
+                existing.text_score = float(match.score.text_score)
+                existing.location_score = float(match.score.location_score)
+                existing.time_score = float(match.score.time_score)
+                existing.final_score = float(match.score.final_score)
                 created_matches.append(existing)
             else:
                 new_match = Match(
@@ -344,6 +364,16 @@ class MatchingService:
         self.faiss.rebuild_image(all_image_vectors)
         
         logger.info("FAISS indices rebuilt successfully")
+
+    def recalculate_all_matches(self):
+        """Rebuild indices and re-match all lost items against found items"""
+        self.rebuild_all_indices()
+        lost_items = self.db.query(LostItem).all()
+        for lost_item in lost_items:
+            matches = self.search_matches_for_lost(lost_item)
+            if matches:
+                self.create_matches(lost_item, matches)
+        logger.info("All matches recalculated successfully")
 
 
 def get_matching_service(db: Session) -> MatchingService:

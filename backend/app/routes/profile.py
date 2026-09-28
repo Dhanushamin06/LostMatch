@@ -6,7 +6,7 @@ from app.models.user import User
 from app.services.auth_service import update_user, change_password
 from app.schemas.auth import UserUpdate, UserChangePassword, UserResponse
 
-router = APIRouter(prefix="/profile", tags=["profile"])
+router = APIRouter(tags=["profile"])
 
 
 @router.get("", response_model=UserResponse)
@@ -80,7 +80,7 @@ async def get_user_stats(
     from app.models.notification import Notification
     unread_notifications = db.query(Notification).filter(
         Notification.user_id == current_user.id,
-        Notification.is_read == 0
+        Notification.is_read == False
     ).count()
     
     return {

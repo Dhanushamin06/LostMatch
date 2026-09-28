@@ -28,7 +28,9 @@ def register_user(db: Session, user_data: UserCreate) -> User:
         full_name=user_data.full_name,
         email=user_data.email,
         password_hash=hashed_password,
-        role=UserRole.USER
+        role=UserRole.USER,
+        phone_number=user_data.phone_number,
+        alt_contact=user_data.alt_contact
     )
     db.add(user)
     db.commit()
@@ -61,8 +63,12 @@ def update_user(db: Session, user_id: int, user_data: UserUpdate) -> User:
             )
         user.email = user_data.email
     
-    if user_data.full_name:
+    if user_data.full_name is not None:
         user.full_name = user_data.full_name
+    if user_data.phone_number is not None:
+        user.phone_number = user_data.phone_number
+    if user_data.alt_contact is not None:
+        user.alt_contact = user_data.alt_contact
     
     db.commit()
     db.refresh(user)

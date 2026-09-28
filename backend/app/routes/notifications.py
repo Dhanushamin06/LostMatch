@@ -21,7 +21,7 @@ async def list_notifications(
     query = db.query(Notification).filter(Notification.user_id == current_user.id)
     
     if unread_only:
-        query = query.filter(Notification.is_read == 0)
+        query = query.filter(Notification.is_read == False)
     
     notifications = query.order_by(Notification.created_at.desc()).offset(skip).limit(limit).all()
     
@@ -45,7 +45,7 @@ async def get_unread_count(
     """Get count of unread notifications"""
     count = db.query(Notification).filter(
         Notification.user_id == current_user.id,
-        Notification.is_read == 0
+        Notification.is_read == False
     ).count()
     
     return {"unread_count": count}
@@ -66,7 +66,7 @@ async def mark_read(
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
     
-    notification.is_read = 1
+    notification.is_read = True
     db.commit()
     
     return {"message": "Notification marked as read"}
@@ -80,8 +80,8 @@ async def mark_all_read(
     """Mark all notifications as read"""
     db.query(Notification).filter(
         Notification.user_id == current_user.id,
-        Notification.is_read == 0
-    ).update({"is_read": 1})
+        Notification.is_read == False
+    ).update({"is_read": True})
     
     db.commit()
     

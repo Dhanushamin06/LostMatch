@@ -16,7 +16,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState<UserType | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [formData, setFormData] = useState({ full_name: "", email: "" })
+  const [formData, setFormData] = useState({ full_name: "", email: "", phone_number: "", alt_contact: "" })
   const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" })
   const [message, setMessage] = useState({ type: "", text: "" })
 
@@ -28,9 +28,14 @@ export default function ProfilePage() {
 
     const fetchUser = async () => {
       try {
-        const userData = await api.get<UserType>("/auth/me")
+        const userData = await api.get<UserType>("/profile")
         setUser(userData)
-        setFormData({ full_name: userData.full_name, email: userData.email })
+        setFormData({
+          full_name: userData.full_name || "",
+          email: userData.email || "",
+          phone_number: userData.phone_number || "",
+          alt_contact: userData.alt_contact || "",
+        })
       } catch {
         api.logout()
         router.push("/login")
@@ -48,9 +53,9 @@ export default function ProfilePage() {
     setMessage({ type: "", text: "" })
 
     try {
-      await api.patch("/auth/me", formData)
+      await api.patch("/profile", formData)
       setMessage({ type: "success", text: "Profile updated successfully" })
-      const updatedUser = await api.get<UserType>("/auth/me")
+      const updatedUser = await api.get<UserType>("/profile")
       setUser(updatedUser)
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to update profile" })
@@ -159,6 +164,27 @@ export default function ProfilePage() {
                     value={formData.email}
                     onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone_number">Mobile / Phone Number</Label>
+                  <Input
+                    id="phone_number"
+                    name="phone_number"
+                    type="tel"
+                    placeholder="e.g., +91 98765 43210"
+                    value={formData.phone_number}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, phone_number: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="alt_contact">Alternate Contact / Notes</Label>
+                  <Input
+                    id="alt_contact"
+                    name="alt_contact"
+                    placeholder="e.g., WhatsApp, Telegram handle, Room 204"
+                    value={formData.alt_contact}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, alt_contact: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-2">

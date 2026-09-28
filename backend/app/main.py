@@ -1,9 +1,11 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.database.session import Base, engine
-from app.routes import auth, lost_items, found_items, matches, claims, notifications, admin, health, profile
+from app.routes import auth, lost_items, found_items, matches, claims, notifications, admin, health, profile, messages
 
 
 @asynccontextmanager
@@ -43,6 +45,14 @@ app.include_router(claims.router, prefix="/claims", tags=["claims"])
 app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 app.include_router(profile.router, prefix="/profile", tags=["profile"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
+app.include_router(messages.router, prefix="/messages", tags=["messages"])
+
+# Serve uploaded images as static files
+# Project root storage directory: e:\IRA-PBL\storage
+_storage_path = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "storage"))
+os.makedirs(os.path.join(_storage_path, "images", "lost"), exist_ok=True)
+os.makedirs(os.path.join(_storage_path, "images", "found"), exist_ok=True)
+app.mount("/storage", StaticFiles(directory=_storage_path), name="storage")
 
 
 @app.get("/")

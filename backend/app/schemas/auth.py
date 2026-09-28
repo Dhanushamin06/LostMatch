@@ -6,6 +6,8 @@ from pydantic import BaseModel, EmailStr, Field
 class UserBase(BaseModel):
     full_name: str = Field(..., min_length=1, max_length=255)
     email: EmailStr
+    phone_number: Optional[str] = None
+    alt_contact: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -15,6 +17,8 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(None, min_length=1, max_length=255)
     email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
+    alt_contact: Optional[str] = None
 
 
 class UserChangePassword(BaseModel):
@@ -25,6 +29,8 @@ class UserChangePassword(BaseModel):
 class UserResponse(UserBase):
     id: int
     role: str
+    phone_number: Optional[str] = None
+    alt_contact: Optional[str] = None
     created_at: datetime
 
     class Config:

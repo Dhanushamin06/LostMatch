@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Search, ArrowLeft, Loader2, Image, MapPin, Calendar, Clock, Tag, HelpCircle, X } from "lucide-react"
+import { Search, ArrowLeft, Loader2, Image, MapPin, Calendar, Clock, Tag, HelpCircle, X, User, Phone, Mail } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,16 +14,16 @@ import { api } from "@/services/api"
 import { ItemCategory } from "@/types"
 
 const CATEGORIES: { value: ItemCategory; label: string }[] = [
-  { value: "electronics", label: "Electronics" },
-  { value: "bags", label: "Bags" },
-  { value: "wallets", label: "Wallets" },
-  { value: "id_cards", label: "ID Cards" },
-  { value: "keys", label: "Keys" },
-  { value: "books", label: "Books" },
-  { value: "clothing", label: "Clothing" },
-  { value: "accessories", label: "Accessories" },
-  { value: "documents", label: "Documents" },
-  { value: "other", label: "Other" },
+  { value: "ELECTRONICS", label: "Electronics" },
+  { value: "BAGS", label: "Bags" },
+  { value: "WALLETS", label: "Wallets" },
+  { value: "ID_CARDS", label: "ID Cards" },
+  { value: "KEYS", label: "Keys" },
+  { value: "BOOKS", label: "Books" },
+  { value: "CLOTHING", label: "Clothing" },
+  { value: "ACCESSORIES", label: "Accessories" },
+  { value: "DOCUMENTS", label: "Documents" },
+  { value: "OTHER", label: "Other" },
 ]
 
 export default function ReportFoundPage() {
@@ -35,12 +35,34 @@ export default function ReportFoundPage() {
 
   const [formData, setFormData] = useState({
     title: "",
-    category: "bags" as ItemCategory,
+    category: "BAGS" as ItemCategory,
     description: "",
     identifying_features: "",
     location: "",
     found_date: "",
     found_time: "",
+    contact_name: "",
+    contact_phone: "",
+    contact_email: "",
+    additional_details: "",
+  })
+
+  // Load user profile to prefill finder contact details
+  useState(() => {
+    if (typeof window !== "undefined" && api.isAuthenticated()) {
+      api.get<{ full_name: string; email: string; phone_number?: string } & Record<string, unknown>>("/profile")
+        .then((profile) => {
+          if (profile) {
+            setFormData((prev) => ({
+              ...prev,
+              contact_name: prev.contact_name || profile.full_name || "",
+              contact_email: prev.contact_email || profile.email || "",
+              contact_phone: prev.contact_phone || profile.phone_number || "",
+            }))
+          }
+        })
+        .catch(() => {})
+    }
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -85,6 +107,10 @@ export default function ReportFoundPage() {
       formDataToSend.append("location", formData.location)
       formDataToSend.append("found_date", formData.found_date)
       if (formData.found_time) formDataToSend.append("found_time", formData.found_time)
+      if (formData.contact_name) formDataToSend.append("contact_name", formData.contact_name)
+      if (formData.contact_phone) formDataToSend.append("contact_phone", formData.contact_phone)
+      if (formData.contact_email) formDataToSend.append("contact_email", formData.contact_email)
+      if (formData.additional_details) formDataToSend.append("additional_details", formData.additional_details)
       if (imageFile) formDataToSend.append("image", imageFile)
 
       await api.upload("/found-items", formDataToSend)
@@ -262,6 +288,79 @@ export default function ReportFoundPage() {
                         </div>
                       )}
                     </label>
+                  </div>
+                </div>
+
+                {/* Finder Contact & Handover Details */}
+                <div className="pt-4 border-t border-white/10 space-y-4">
+                  <div className="flex items-center gap-2 text-primary font-medium text-base">
+                    <User className="h-5 w-5" />
+                    <span>Finder Contact & Handover Information</span>
+                  </div>
+                  <p className="text-xs text-white/50 -mt-2">
+                    Provide your contact info so the rightful owner or authorities can coordinate returning the item.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="contact_name">Finder / Contact Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-white/40" />
+                        <Input
+                          id="contact_name"
+                          name="contact_name"
+                          placeholder="e.g., Jane Smith"
+                          className="pl-9"
+                          value={formData.contact_name}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contact_phone">Mobile / Phone Number *</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-3 h-4 w-4 text-white/40" />
+                        <Input
+                          id="contact_phone"
+                          name="contact_phone"
+                          type="tel"
+                          placeholder="e.g., +91 98765 43210"
+                          className="pl-9"
+                          value={formData.contact_phone}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contact_email">Email Address</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-white/40" />
+                      <Input
+                        id="contact_email"
+                        name="contact_email"
+                        type="email"
+                        placeholder="e.g., jane@example.com"
+                        className="pl-9"
+                        value={formData.contact_email}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="additional_details">Item Custody & Handover Details</Label>
+                    <Textarea
+                      id="additional_details"
+                      name="additional_details"
+                      placeholder="e.g., Handed over to Bajpe Airport Security Desk Room 102, or Kept with me at SJEC CS Department"
+                      value={formData.additional_details}
+                      onChange={handleInputChange}
+                      rows={2}
+                    />
                   </div>
                 </div>
 

@@ -6,9 +6,10 @@ import enum
 
 
 class MatchStatus(str, enum.Enum):
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    REJECTED = "rejected"
+    PENDING = "PENDING"
+    CLAIM_PENDING = "claim_pending"
+    CONFIRMED = "CONFIRMED"
+    REJECTED = "REJECTED"
 
 
 class Match(Base):
@@ -22,7 +23,7 @@ class Match(Base):
     location_score = Column(Float, default=0.0)
     time_score = Column(Float, default=0.0)
     final_score = Column(Float, default=0.0)
-    status = Column(SQLEnum(MatchStatus), default=MatchStatus.PENDING, nullable=False)
+    status = Column(SQLEnum(MatchStatus, values_callable=lambda x: [e.value for e in x]), default=MatchStatus.PENDING, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     lost_item = relationship("LostItem", back_populates="matches", foreign_keys=[lost_item_id])
@@ -31,9 +32,9 @@ class Match(Base):
 
 
 class ClaimStatus(str, enum.Enum):
-    PENDING = "pending"
-    VERIFIED = "verified"
-    REJECTED = "rejected"
+    PENDING = "PENDING"
+    VERIFIED = "VERIFIED"
+    REJECTED = "REJECTED"
 
 
 class Claim(Base):
@@ -44,7 +45,7 @@ class Claim(Base):
     claimant_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     verification_question = Column(Text, nullable=False)
     verification_answer = Column(Text, nullable=True)
-    status = Column(SQLEnum(ClaimStatus), default=ClaimStatus.PENDING, nullable=False)
+    status = Column(SQLEnum(ClaimStatus, values_callable=lambda x: [e.value for e in x]), default=ClaimStatus.PENDING, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     match = relationship("Match", back_populates="claims")

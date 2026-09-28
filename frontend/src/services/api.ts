@@ -5,32 +5,41 @@ class ApiClient {
   private refreshToken: string | null = null
   private refreshPromise: Promise<string> | null = null
 
+  private getStorage() {
+    if (typeof window === 'undefined') return null
+    // Use sessionStorage for tab isolation - each tab gets its own session
+    return window.sessionStorage
+  }
+
   setTokens(access: string | null, refresh: string | null) {
     this.accessToken = access
     this.refreshToken = refresh
-    if (typeof window !== 'undefined') {
+    const storage = this.getStorage()
+    if (storage) {
       if (access && refresh) {
-        localStorage.setItem('auth_access_token', access)
-        localStorage.setItem('auth_refresh_token', refresh)
+        storage.setItem('auth_access_token', access)
+        storage.setItem('auth_refresh_token', refresh)
       } else {
-        localStorage.removeItem('auth_access_token')
-        localStorage.removeItem('auth_refresh_token')
+        storage.removeItem('auth_access_token')
+        storage.removeItem('auth_refresh_token')
       }
     }
   }
 
   getAccessToken(): string | null {
     if (this.accessToken) return this.accessToken
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth_access_token')
+    const storage = this.getStorage()
+    if (storage) {
+      return storage.getItem('auth_access_token')
     }
     return null
   }
 
   getRefreshToken(): string | null {
     if (this.refreshToken) return this.refreshToken
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth_refresh_token')
+    const storage = this.getStorage()
+    if (storage) {
+      return storage.getItem('auth_refresh_token')
     }
     return null
   }
@@ -174,11 +183,17 @@ class ApiClient {
     return data
   }
 
-  async register(fullName: string, email: string, password: string) {
+  async register(fullName: string, email: string, password: string, phoneNumber?: string, altContact?: string) {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ full_name: fullName, email, password }),
+      body: JSON.stringify({
+        full_name: fullName,
+        email,
+        password,
+        phone_number: phoneNumber || null,
+        alt_contact: altContact || null,
+      }),
     })
 
     if (!response.ok) {
@@ -197,6 +212,13 @@ class ApiClient {
 
   isAuthenticated(): boolean {
     return !!this.getAccessToken()
+  }
+
+  /** Convert a relative image path like /storage/... to a full backend URL */
+  getImageUrl(imagePath: string | null | undefined): string | null {
+    if (!imagePath) return null
+    if (imagePath.startsWith('http')) return imagePath
+    return `${API_BASE_URL}${imagePath}`
   }
 }
 

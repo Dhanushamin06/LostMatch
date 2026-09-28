@@ -53,19 +53,43 @@ async def list_matches(
                 "id": match.lost_item.id,
                 "title": match.lost_item.title,
                 "category": match.lost_item.category.value,
+                "description": match.lost_item.description,
+                "identifying_features": match.lost_item.identifying_features,
                 "image_url": match.lost_item.image_url,
                 "location": match.lost_item.location,
                 "lost_date": match.lost_item.lost_date.isoformat(),
-                "user_id": match.lost_item.user_id
+                "lost_time": match.lost_item.lost_time.isoformat() if match.lost_item.lost_time else None,
+                "contact_name": match.lost_item.contact_name or (match.lost_item.user.full_name if match.lost_item.user else None),
+                "contact_phone": match.lost_item.contact_phone or (match.lost_item.user.phone_number if match.lost_item.user else None),
+                "contact_email": match.lost_item.contact_email or (match.lost_item.user.email if match.lost_item.user else None),
+                "additional_details": match.lost_item.additional_details,
+                "user_id": match.lost_item.user_id,
+                "user": {
+                    "full_name": match.lost_item.user.full_name,
+                    "email": match.lost_item.user.email,
+                    "phone_number": match.lost_item.user.phone_number
+                } if match.lost_item.user else None
             } if match.lost_item else None,
             "found_item": {
                 "id": match.found_item.id,
                 "title": match.found_item.title,
                 "category": match.found_item.category.value,
+                "description": match.found_item.description,
+                "identifying_features": match.found_item.identifying_features,
                 "image_url": match.found_item.image_url,
                 "location": match.found_item.location,
                 "found_date": match.found_item.found_date.isoformat(),
-                "user_id": match.found_item.user_id
+                "found_time": match.found_item.found_time.isoformat() if match.found_item.found_time else None,
+                "contact_name": match.found_item.contact_name or (match.found_item.user.full_name if match.found_item.user else None),
+                "contact_phone": match.found_item.contact_phone or (match.found_item.user.phone_number if match.found_item.user else None),
+                "contact_email": match.found_item.contact_email or (match.found_item.user.email if match.found_item.user else None),
+                "additional_details": match.found_item.additional_details,
+                "user_id": match.found_item.user_id,
+                "user": {
+                    "full_name": match.found_item.user.full_name,
+                    "email": match.found_item.user.email,
+                    "phone_number": match.found_item.user.phone_number
+                } if match.found_item.user else None
             } if match.found_item else None
         }
         for match in matches
@@ -113,8 +137,13 @@ async def get_match(
             "location": lost_item.location,
             "lost_date": lost_item.lost_date.isoformat(),
             "lost_time": lost_item.lost_time.isoformat() if lost_item.lost_time else None,
+            "contact_name": lost_item.contact_name or (lost_item.user.full_name if lost_item.user else ""),
+            "contact_phone": lost_item.contact_phone or (lost_item.user.phone_number if lost_item.user else ""),
+            "contact_email": lost_item.contact_email or (lost_item.user.email if lost_item.user else ""),
+            "additional_details": lost_item.additional_details,
             "user_id": lost_item.user_id,
-            "user_name": lost_item.user.full_name if lost_item.user else ""
+            "user_name": lost_item.user.full_name if lost_item.user else "",
+            "user_phone": lost_item.user.phone_number if lost_item.user else ""
         },
         "found_item": {
             "id": found_item.id,
@@ -126,8 +155,13 @@ async def get_match(
             "location": found_item.location,
             "found_date": found_item.found_date.isoformat(),
             "found_time": found_item.found_time.isoformat() if found_item.found_time else None,
+            "contact_name": found_item.contact_name or (found_item.user.full_name if found_item.user else ""),
+            "contact_phone": found_item.contact_phone or (found_item.user.phone_number if found_item.user else ""),
+            "contact_email": found_item.contact_email or (found_item.user.email if found_item.user else ""),
+            "additional_details": found_item.additional_details,
             "user_id": found_item.user_id,
-            "user_name": found_item.user.full_name if found_item.user else ""
+            "user_name": found_item.user.full_name if found_item.user else "",
+            "user_phone": found_item.user.phone_number if found_item.user else ""
         }
     }
 

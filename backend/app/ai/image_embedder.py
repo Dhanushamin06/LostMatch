@@ -42,7 +42,16 @@ class ImageEmbedder:
         inputs = self.processor(images=pil_images, return_tensors="pt", padding=True).to(self.device)
         
         with torch.no_grad():
-            image_features = self.model.get_image_features(**inputs)
+            outputs = self.model.get_image_features(**inputs)
+            if hasattr(outputs, "pooler_output") and outputs.pooler_output is not None:
+                image_features = outputs.pooler_output
+            elif hasattr(outputs, "image_embeds") and outputs.image_embeds is not None:
+                image_features = outputs.image_embeds
+            elif isinstance(outputs, torch.Tensor):
+                image_features = outputs
+            else:
+                image_features = outputs[0]
+            
             image_features = image_features / image_features.norm(dim=-1, keepdim=True)
         
         return image_features.cpu().numpy().astype(np.float32)

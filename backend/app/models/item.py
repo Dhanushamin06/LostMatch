@@ -6,26 +6,26 @@ import enum
 
 
 class ItemCategory(str, enum.Enum):
-    ELECTRONICS = "electronics"
-    BAGS = "bags"
-    WALLETS = "wallets"
-    ID_CARDS = "id_cards"
-    KEYS = "keys"
-    BOOKS = "books"
-    CLOTHING = "clothing"
-    ACCESSORIES = "accessories"
-    DOCUMENTS = "documents"
-    OTHER = "other"
+    ELECTRONICS = "ELECTRONICS"
+    BAGS = "BAGS"
+    WALLETS = "WALLETS"
+    ID_CARDS = "ID_CARDS"
+    KEYS = "KEYS"
+    BOOKS = "BOOKS"
+    CLOTHING = "CLOTHING"
+    ACCESSORIES = "ACCESSORIES"
+    DOCUMENTS = "DOCUMENTS"
+    OTHER = "OTHER"
 
 
 class ItemStatus(str, enum.Enum):
-    LOST = "lost"
-    FOUND = "found"
-    POTENTIAL_MATCH = "potential_match"
-    CLAIM_PENDING = "claim_pending"
-    VERIFIED = "verified"
-    RETURNED = "returned"
-    CLOSED = "closed"
+    LOST = "LOST"
+    FOUND = "FOUND"
+    POTENTIAL_MATCH = "POTENTIAL_MATCH"
+    CLAIM_PENDING = "CLAIM_PENDING"
+    VERIFIED = "VERIFIED"
+    RETURNED = "RETURNED"
+    CLOSED = "CLOSED"
 
 
 class LostItem(Base):
@@ -34,7 +34,7 @@ class LostItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     title = Column(String(255), nullable=False)
-    category = Column(SQLEnum(ItemCategory), nullable=False)
+    category = Column(SQLEnum(ItemCategory, values_callable=lambda x: [e.value for e in x]), nullable=False)
     description = Column(Text, nullable=False)
     identifying_features = Column(Text, nullable=True)
     image_url = Column(String(500), nullable=True)
@@ -43,7 +43,11 @@ class LostItem(Base):
     longitude = Column(Float, nullable=True)
     lost_date = Column(Date, nullable=False)
     lost_time = Column(Time, nullable=True)
-    status = Column(SQLEnum(ItemStatus), default=ItemStatus.LOST, nullable=False)
+    status = Column(SQLEnum(ItemStatus, values_callable=lambda x: [e.value for e in x]), default=ItemStatus.LOST, nullable=False)
+    contact_name = Column(String(255), nullable=True)
+    contact_phone = Column(String(50), nullable=True)
+    contact_email = Column(String(255), nullable=True)
+    additional_details = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     text_embedding_id = Column(Integer, nullable=True)
     image_embedding_id = Column(Integer, nullable=True)
@@ -58,7 +62,7 @@ class FoundItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     title = Column(String(255), nullable=False)
-    category = Column(SQLEnum(ItemCategory), nullable=False)
+    category = Column(SQLEnum(ItemCategory, values_callable=lambda x: [e.value for e in x]), nullable=False)
     description = Column(Text, nullable=False)
     identifying_features = Column(Text, nullable=True)
     image_url = Column(String(500), nullable=True)
@@ -67,7 +71,11 @@ class FoundItem(Base):
     longitude = Column(Float, nullable=True)
     found_date = Column(Date, nullable=False)
     found_time = Column(Time, nullable=True)
-    status = Column(SQLEnum(ItemStatus), default=ItemStatus.FOUND, nullable=False)
+    status = Column(SQLEnum(ItemStatus, values_callable=lambda x: [e.value for e in x]), default=ItemStatus.FOUND, nullable=False)
+    contact_name = Column(String(255), nullable=True)
+    contact_phone = Column(String(50), nullable=True)
+    contact_email = Column(String(255), nullable=True)
+    additional_details = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     text_embedding_id = Column(Integer, nullable=True)
     image_embedding_id = Column(Integer, nullable=True)

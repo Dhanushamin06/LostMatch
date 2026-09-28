@@ -11,13 +11,25 @@ from app.models.notification import Notification, NotificationType
 router = APIRouter()
 
 
+from pydantic import BaseModel
+
+class ClaimCreate(BaseModel):
+    match_id: int
+    verification_question: str
+
+class ClaimVerify(BaseModel):
+    verification_answer: str
+    approve: bool
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_claim(
-    match_id: int,
-    verification_question: str,
+    claim_data: ClaimCreate,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    match_id = claim_data.match_id
+    verification_question = claim_data.verification_question
     """Submit a claim for a matched item"""
     match = db.query(Match).filter(Match.id == match_id).first()
     if not match:
@@ -156,11 +168,12 @@ async def list_received_claims(
 @router.patch("/{claim_id}/verify")
 async def verify_claim(
     claim_id: int,
-    verification_answer: str,
-    approve: bool,
+    verify_data: ClaimVerify,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    verification_answer = verify_data.verification_answer
+    approve = verify_data.approve
     """Verify/approve or reject a claim (by found item owner)"""
     claim = db.query(Claim).filter(Claim.id == claim_id).first()
     if not claim:
