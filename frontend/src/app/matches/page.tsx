@@ -217,15 +217,15 @@ export default function MatchesPage() {
                       <div className="md:col-span-2 grid grid-cols-2 gap-6">
                         <div className="p-4 bg-white/5 rounded-lg">
                           <h4 className="font-medium text-white/60 mb-3">Lost Item</h4>
-                          <Link href={`/items/${match.lost_item.id}?type=lost`} className="block">
+                          <Link href={`/items/${match.lost_item.id}?type=lost`} className="block group">
                             {match.lost_item.image_url ? (
-                              <img src={api.getImageUrl(match.lost_item.image_url)!} alt={match.lost_item.title} className="w-full h-40 object-cover rounded-lg mb-3" />
+                              <img src={api.getImageUrl(match.lost_item.image_url)!} alt={match.lost_item.title} className="w-full h-40 object-cover rounded-lg mb-3 group-hover:opacity-90 transition-opacity" />
                             ) : (
                               <div className="w-full h-40 bg-white/5 rounded-lg flex items-center justify-center mb-3">
                                 <Search className="h-10 w-10 text-white/30" />
                               </div>
                             )}
-                            <h5 className="font-medium text-white truncate">{match.lost_item.title}</h5>
+                            <h5 className="font-medium text-white truncate group-hover:text-primary transition-colors">{match.lost_item.title}</h5>
                             <p className="text-xs text-white/50 mt-1">{match.lost_item.category}</p>
                             <p className="text-xs text-white/40 mt-1 flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
@@ -237,64 +237,64 @@ export default function MatchesPage() {
                                 Lost: {match.lost_item.lost_date}
                               </p>
                             )}
-                            {/* Contact Person Details */}
-                            {(match.lost_item.contact_name || match.lost_item.user || match.lost_item.contact_phone) && (
-                              <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-1.5">
-                                <p className="text-xs font-semibold text-blue-400">Lost By / Contact:</p>
-                                <p className="font-medium text-white text-sm">
-                                  {match.lost_item.contact_name || match.lost_item.user?.full_name || "Owner"}
-                                </p>
-                                {(match.lost_item.contact_phone || match.lost_item.user?.phone_number) && (
-                                  <div className="flex items-center justify-between gap-2 pt-1">
-                                    <span className="text-xs text-white/70 font-mono">
-                                      {match.lost_item.contact_phone || match.lost_item.user?.phone_number}
-                                    </span>
-                                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                                      <a
-                                        href={`tel:${match.lost_item.contact_phone || match.lost_item.user?.phone_number}`}
-                                        className="p-1 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/40 text-[11px] font-medium"
-                                        title="Call"
-                                      >
-                                        <Phone className="h-3 w-3" />
-                                      </a>
-                                      <a
-                                        href={`https://wa.me/${(match.lost_item.contact_phone || match.lost_item.user?.phone_number || "").replace(/[^0-9]/g, "")}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="p-1 rounded bg-green-500/20 text-green-300 hover:bg-green-500/40 text-[11px] font-medium"
-                                        title="WhatsApp"
-                                      >
-                                        <MessageCircle className="h-3 w-3" />
-                                      </a>
-                                    </div>
-                                  </div>
-                                )}
-                                {(match.lost_item.contact_email || match.lost_item.user?.email) && (
-                                  <p className="text-xs text-white/60 truncate">
-                                    {match.lost_item.contact_email || match.lost_item.user?.email}
-                                  </p>
-                                )}
-                                {match.lost_item.additional_details && (
-                                  <p className="text-[11px] text-white/50 italic pt-1 border-t border-white/5">
-                                    Note: {match.lost_item.additional_details}
-                                  </p>
-                                )}
-                              </div>
-                            )}
                           </Link>
+                          {/* Contact Person Details */}
+                          {(match.lost_item.contact_name || match.lost_item.user || match.lost_item.contact_phone) && (
+                            <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-1.5">
+                              <p className="text-xs font-semibold text-blue-400">Lost By / Contact:</p>
+                              <p className="font-medium text-white text-sm">
+                                {match.lost_item.contact_name || match.lost_item.user?.full_name || "Owner"}
+                              </p>
+                              {(match.lost_item.contact_phone || match.lost_item.user?.phone_number) && (
+                                <div className="flex items-center justify-between gap-2 pt-1">
+                                  <span className="text-xs text-white/70 font-mono">
+                                    {match.lost_item.contact_phone || match.lost_item.user?.phone_number}
+                                  </span>
+                                  <div className="flex gap-1">
+                                    <a
+                                      href={`tel:${match.lost_item.contact_phone || match.lost_item.user?.phone_number}`}
+                                      className="p-1 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/40 text-[11px] font-medium"
+                                      title="Call"
+                                    >
+                                      <Phone className="h-3 w-3" />
+                                    </a>
+                                    <a
+                                      href={`https://wa.me/${(match.lost_item.contact_phone || match.lost_item.user?.phone_number || "").replace(/[^0-9]/g, "")}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="p-1 rounded bg-green-500/20 text-green-300 hover:bg-green-500/40 text-[11px] font-medium"
+                                      title="WhatsApp"
+                                    >
+                                      <MessageCircle className="h-3 w-3" />
+                                    </a>
+                                  </div>
+                                </div>
+                              )}
+                              {(match.lost_item.contact_email || match.lost_item.user?.email) && (
+                                <p className="text-xs text-white/60 truncate">
+                                  {match.lost_item.contact_email || match.lost_item.user?.email}
+                                </p>
+                              )}
+                              {match.lost_item.additional_details && (
+                                <p className="text-[11px] text-white/50 italic pt-1 border-t border-white/5">
+                                  Note: {match.lost_item.additional_details}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         <div className="p-4 bg-white/5 rounded-lg">
                           <h4 className="font-medium text-white/60 mb-3">Found Item</h4>
-                          <Link href={`/items/${match.found_item.id}?type=found`} className="block">
+                          <Link href={`/items/${match.found_item.id}?type=found`} className="block group">
                             {match.found_item.image_url ? (
-                              <img src={api.getImageUrl(match.found_item.image_url)!} alt={match.found_item.title} className="w-full h-40 object-cover rounded-lg mb-3" />
+                              <img src={api.getImageUrl(match.found_item.image_url)!} alt={match.found_item.title} className="w-full h-40 object-cover rounded-lg mb-3 group-hover:opacity-90 transition-opacity" />
                             ) : (
                               <div className="w-full h-40 bg-white/5 rounded-lg flex items-center justify-center mb-3">
                                 <Search className="h-10 w-10 text-white/30" />
                               </div>
                             )}
-                            <h5 className="font-medium text-white truncate">{match.found_item.title}</h5>
+                            <h5 className="font-medium text-white truncate group-hover:text-primary transition-colors">{match.found_item.title}</h5>
                             <p className="text-xs text-white/50 mt-1">{match.found_item.category}</p>
                             <p className="text-xs text-white/40 mt-1 flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
@@ -306,51 +306,51 @@ export default function MatchesPage() {
                                 Found: {match.found_item.found_date}
                               </p>
                             )}
-                            {/* Finder Contact Details */}
-                            {(match.found_item.contact_name || match.found_item.user || match.found_item.contact_phone) && (
-                              <div className="mt-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg space-y-1.5">
-                                <p className="text-xs font-semibold text-green-400">Found By / Handover:</p>
-                                <p className="font-medium text-white text-sm">
-                                  {match.found_item.contact_name || match.found_item.user?.full_name || "Finder"}
-                                </p>
-                                {(match.found_item.contact_phone || match.found_item.user?.phone_number) && (
-                                  <div className="flex items-center justify-between gap-2 pt-1">
-                                    <span className="text-xs text-white/70 font-mono">
-                                      {match.found_item.contact_phone || match.found_item.user?.phone_number}
-                                    </span>
-                                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                                      <a
-                                        href={`tel:${match.found_item.contact_phone || match.found_item.user?.phone_number}`}
-                                        className="p-1 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/40 text-[11px] font-medium"
-                                        title="Call"
-                                      >
-                                        <Phone className="h-3 w-3" />
-                                      </a>
-                                      <a
-                                        href={`https://wa.me/${(match.found_item.contact_phone || match.found_item.user?.phone_number || "").replace(/[^0-9]/g, "")}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="p-1 rounded bg-green-500/20 text-green-300 hover:bg-green-500/40 text-[11px] font-medium"
-                                        title="WhatsApp"
-                                      >
-                                        <MessageCircle className="h-3 w-3" />
-                                      </a>
-                                    </div>
-                                  </div>
-                                )}
-                                {(match.found_item.contact_email || match.found_item.user?.email) && (
-                                  <p className="text-xs text-white/60 truncate">
-                                    {match.found_item.contact_email || match.found_item.user?.email}
-                                  </p>
-                                )}
-                                {match.found_item.additional_details && (
-                                  <p className="text-[11px] text-white/50 italic pt-1 border-t border-white/5">
-                                    Location/Custody: {match.found_item.additional_details}
-                                  </p>
-                                )}
-                              </div>
-                            )}
                           </Link>
+                          {/* Finder Contact Details */}
+                          {(match.found_item.contact_name || match.found_item.user || match.found_item.contact_phone) && (
+                            <div className="mt-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg space-y-1.5">
+                              <p className="text-xs font-semibold text-green-400">Found By / Handover:</p>
+                              <p className="font-medium text-white text-sm">
+                                {match.found_item.contact_name || match.found_item.user?.full_name || "Finder"}
+                              </p>
+                              {(match.found_item.contact_phone || match.found_item.user?.phone_number) && (
+                                <div className="flex items-center justify-between gap-2 pt-1">
+                                  <span className="text-xs text-white/70 font-mono">
+                                    {match.found_item.contact_phone || match.found_item.user?.phone_number}
+                                  </span>
+                                  <div className="flex gap-1">
+                                    <a
+                                      href={`tel:${match.found_item.contact_phone || match.found_item.user?.phone_number}`}
+                                      className="p-1 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/40 text-[11px] font-medium"
+                                      title="Call"
+                                    >
+                                      <Phone className="h-3 w-3" />
+                                    </a>
+                                    <a
+                                      href={`https://wa.me/${(match.found_item.contact_phone || match.found_item.user?.phone_number || "").replace(/[^0-9]/g, "")}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="p-1 rounded bg-green-500/20 text-green-300 hover:bg-green-500/40 text-[11px] font-medium"
+                                      title="WhatsApp"
+                                    >
+                                      <MessageCircle className="h-3 w-3" />
+                                    </a>
+                                  </div>
+                                </div>
+                              )}
+                              {(match.found_item.contact_email || match.found_item.user?.email) && (
+                                <p className="text-xs text-white/60 truncate">
+                                  {match.found_item.contact_email || match.found_item.user?.email}
+                                </p>
+                              )}
+                              {match.found_item.additional_details && (
+                                <p className="text-[11px] text-white/50 italic pt-1 border-t border-white/5">
+                                  Location/Custody: {match.found_item.additional_details}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
